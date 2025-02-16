@@ -317,7 +317,7 @@ class BaseEval:
         if len(contact_point_dict) == 0:
             for metric_name in eval_config.type:
                 fc_metric_results[f"{metric_name}_metric"] = 2
-            return
+            return fc_metric_results
         else:
             # Average all contacts on the same hand body
             contact_points = np.stack(

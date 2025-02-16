@@ -51,7 +51,7 @@ def BODex(params):
         new_data["grasp_pose"] = hand_pose[i]
         new_data["grasp_qpos"] = hand_qpos[i]
         new_data["squeeze_pose"] = hand_pose[i]
-        new_data["squeeze_qpos"] = hand_qpos[i] * 2 - pregrasp_qpos[i] * 1
+        new_data["squeeze_qpos"] = hand_qpos[i] * 1.5 - pregrasp_qpos[i] * 0.5
         save_path = data_file.replace(
             configs.task.data_path, configs.grasp_dir
         ).replace("_grasp.npy", f"/{i}.npy")

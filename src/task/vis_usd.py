@@ -52,9 +52,9 @@ def read_npy(params):
 
         hand_fk.forward_kinematics(qpos)
         hand_link_pose = hand_fk.get_poses(new_hand_pose)
-
+        
         obj_pose_lst.append(
-            np.concatenate([new_obj_pose, [grasp_data["obj_scale"]]], axis=-1)
+            np.concatenate([new_obj_pose, grasp_data["obj_scale"]], axis=-1)
         )
         hand_pose_lst.append(hand_link_pose)
 
@@ -106,14 +106,16 @@ def task_vusd(configs):
         raise NotImplementedError
 
     input_file_lst = sorted(input_file_lst)
+    
+    np.random.seed(0)
     if configs.task.max_num > 0 and len(input_file_lst) > configs.task.max_num:
         input_file_lst = np.random.permutation(input_file_lst)[: configs.task.max_num]
-
+    print(input_file_lst[86])
     logging.info(f"Visualize {len(input_file_lst)} grasp")
 
     param_lst = [(i, configs.hand.xml_path, configs) for i in input_file_lst]
     with multiprocessing.Pool(processes=configs.n_worker) as pool:
-        result_iter = pool.imap_unordered(read_npy_safe, param_lst)
+        result_iter = pool.map(read_npy_safe, param_lst)
         result_iter = [r for r in list(result_iter) if r is not None]
 
     obj_path_dict = {}
