@@ -1,9 +1,7 @@
 import os
 import sys
-import pdb
 
 import numpy as np
-import mujoco
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from util.rot_util import np_get_delta_qpos
@@ -24,48 +22,41 @@ class FCMocapEval(BaseEval):
         )
 
         for i in range(len(external_force_direction)):
-            # 1. Reset to pre-grasp pose
-            mujoco.mj_resetDataKeyframe(
-                self.mj_model, self.mj_data, self.mj_model.nkey - 2
+            self.mj_ho.reset_pose_qpos(
+                self.grasp_data["pregrasp_pose"],
+                self.grasp_data["pregrasp_qpos"],
+                self.grasp_data["obj_pose"],
             )
-            self.mj_data.qfrc_applied[:] = 0.0
-            self.mj_data.xfrc_applied[:] = 0.0
-            mujoco.mj_forward(self.mj_model, self.mj_data)
 
             # 2. Move hand to grasp pose
-            self._control_hand_with_interp(
+            self.mj_ho.control_hand_with_interp(
                 self.grasp_data["pregrasp_pose"],
                 self.grasp_data["grasp_pose"],
-                self.grasp_data["pregrasp_ctrl"],
-                self.grasp_data["grasp_ctrl"],
+                self.grasp_data["pregrasp_qpos"],
+                self.grasp_data["grasp_qpos"],
             )
 
             # 3. Move hand to squeeze pose.
             # NOTE step 2 and 3 are seperate because pre -> grasp -> squeeze are stage-wise linear.
             # If step 2 and 3 are merged to one linear interpolation, the performance will drop a lot.
-            self._control_hand_with_interp(
+            self.mj_ho.control_hand_with_interp(
                 self.grasp_data["grasp_pose"],
                 self.grasp_data["squeeze_pose"],
-                self.grasp_data["grasp_ctrl"],
-                self.grasp_data["squeeze_ctrl"],
+                self.grasp_data["grasp_qpos"],
+                self.grasp_data["squeeze_qpos"],
             )
 
             # 4. Add external force on the object
-            self.mj_data.xfrc_applied[-1] = (
+            self.mj_ho.set_ext_force_on_obj(
                 10 * external_force_direction[i] * self.configs.task.obj_mass
             )
 
             # 5. Wait for 2 seconds
-            for j in range(10):
-                for _ in range(50):
-                    mujoco.mj_step(self.mj_model, self.mj_data)
-
-                if self.configs.debug_viewer:
-                    self.debug_viewer.sync()
-                    pdb.set_trace()
+            for _ in range(10):
+                self.mj_ho.control_hand_step(step_inner=50)
 
                 # Early stop
-                _, _, latter_obj_qpos = self.hospec.split_qpos_pose(self.mj_data.qpos)
+                latter_obj_qpos = self.mj_ho.get_obj_pose()
                 delta_pos, delta_angle = np_get_delta_qpos(
                     pre_obj_qpos, latter_obj_qpos
                 )

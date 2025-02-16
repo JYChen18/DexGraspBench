@@ -1,6 +1,5 @@
 xml_path: assets/hand/allegro/customized.xml 
 color: [0.0544794, 0.376262, 0.913099, 1.0]
-tendon:
 finger_prefix: ['ff','mf', 'rf', 'th']
 valid_body_name: [
     'palm', 

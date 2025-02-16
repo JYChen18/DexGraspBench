@@ -10,7 +10,6 @@ eval_dir: ${save_dir}/evaluation
 succ_dir: ${save_dir}/succgrasp
 vusd_dir: ${save_dir}/vis_usd
 vobj_dir: ${save_dir}/vis_obj
-debug_dir: ${save_dir}/debug
 data_struct: 
   - "**"
   - "**"
@@ -18,17 +17,6 @@ data_struct:
 
 log_dir: ${save_dir}/log/${task_name}/${now:%Y_%m_%d_%H_%M_%S}
 
-debug: False
-debug_viewer: False
-debug_render: False
-
-pose_config:
-  pregrasp_type:     # None or "minus" or "multiply"
-  pregrasp_coef_minus: 0.05   # Used if pregrasp_type == minus. pregrasp_qpos = grasp_qpos - pregrasp_coef_minus
-  pregrasp_coef_multiply: 0.9 # Used if pregrasp_type == multiply. pregrasp_qpos = grasp_qpos * pregrasp_coef_multiply
-  squeeze_type:      # None or "multiply"
-  squeeze_coef: 1.0  # Used if squeeze_type == multiply. squeeze_qpos = (grasp_qpos - pregrasp_qpos) * squeeze_coef + grasp_qpos
-  
 defaults:
   - _self_
   - task: stat

@@ -1,4 +1,3 @@
 # xml_path: third_party/mujoco_menagerie/leap_hand/right_hand.xml
 xml_path: assets/hand/leap/customized.xml
 color: [0.132868, 0.496933, 0.144129, 1.0]
-tendon:

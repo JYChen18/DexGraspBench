@@ -1,75 +1,94 @@
 import os
+import pdb
+
+os.environ["MUJOCO_GL"] = "osmesa"
+
 import trimesh
 import numpy as np
 import mujoco
+import mujoco.viewer
 import transforms3d.quaternions as tq
 
+from .rot_util import interplote_pose, interplote_qpos
 
-class HOMjSpec:
+
+class MjHO:
 
     hand_prefix: str = "child-"
-    hf_name: str = "hand_freejoint"
-    of_name: str = "obj_freejoint"
 
     def __init__(
         self,
         obj_path,
-        obj_pose,
         obj_scale,
         obj_density,
         hand_xml_path,
-        hand_tendon_cfg,
         friction_coef,
         has_floor_z0,
-        pregrasp_pose,
-        pregrasp_qpos,
-        grasp_pose,
-        grasp_qpos,
+        debug_render=False,
+        debug_viewer=False,
     ):
-        self.hand_tendon_cfg = {}
-        if hand_tendon_cfg is not None:
-            for k, v in hand_tendon_cfg.items():
-                self.hand_tendon_cfg[self.hand_prefix + k] = [
-                    self.hand_prefix + v[0],
-                    self.hand_prefix + v[1],
-                ]
-
         self.spec = mujoco.MjSpec()
         self.spec.meshdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.spec.option.timestep = 0.004
-        self.spec.option.impratio = 10
         self.spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
         self.spec.option.disableflags = mujoco.mjtDisableBit.mjDSBL_GRAVITY
         self.spec.option.enableflags = mujoco.mjtEnableBit.mjENBL_NATIVECCD
-        self.spec.add_texture(
-            type=mujoco.mjtTexture.mjTEXTURE_SKYBOX,
-            builtin=mujoco.mjtBuiltin.mjBUILTIN_GRADIENT,
-            rgb1=[0.3, 0.5, 0.7],
-            rgb2=[0.3, 0.5, 0.7],
-            width=512,
-            height=512,
-        )
-        self.spec.worldbody.add_light(
-            name="spotlight",
-            pos=[0, -1, 2],
-            castshadow=False,
-        )
-        self.spec.worldbody.add_camera(
-            name="closeup", pos=[0.4, -0.02, 0.15], xyaxes=[0, 1, 0, 0, 0, 1]
-        )
+        if debug_render or debug_viewer:
+            self.spec.add_texture(
+                type=mujoco.mjtTexture.mjTEXTURE_SKYBOX,
+                builtin=mujoco.mjtBuiltin.mjBUILTIN_GRADIENT,
+                rgb1=[0.3, 0.5, 0.7],
+                rgb2=[0.3, 0.5, 0.7],
+                width=512,
+                height=512,
+            )
+            self.spec.worldbody.add_light(
+                name="spotlight",
+                pos=[0, -1, 2],
+                castshadow=False,
+            )
+            self.spec.worldbody.add_camera(
+                name="closeup", pos=[0.4, -0.02, 0.15], xyaxes=[0, 1, 0, 0, 0, 1]
+            )
 
-        self.joint_names, self.actuator_targets = self._add_hand(hand_xml_path)
-        self._add_object(
-            obj_path,
-            obj_pose,
-            obj_scale,
-            has_floor_z0,
-            obj_density=obj_density,
-        )
+        self._add_hand(hand_xml_path)
+        self._add_object(obj_path, obj_scale, obj_density, has_floor_z0)
         self._set_friction(friction_coef)
-        self._add_key(pregrasp_pose, pregrasp_qpos, obj_pose)
-        self._add_key(grasp_pose, grasp_qpos, obj_pose)
+        self.spec.add_key()
 
+        # Get ready for simulation
+        self.model = self.spec.compile()
+        self.data = mujoco.MjData(self.model)
+
+        mujoco.mj_resetDataKeyframe(self.model, self.data, 0)
+        mujoco.mj_forward(self.model, self.data)
+
+        # For ctrl
+        qpos2ctrl_matrix = np.zeros((self.model.nu, self.model.nv))
+        mujoco.mju_sparse2dense(
+            qpos2ctrl_matrix,
+            self.data.actuator_moment,
+            self.data.moment_rownnz,
+            self.data.moment_rowadr,
+            self.data.moment_colind,
+        )
+        self._qpos2ctrl_matrix = qpos2ctrl_matrix[..., 6:-6]
+
+        self.debug_viewer = None
+        self.debug_render = None
+        if debug_viewer:
+            self.debug_viewer = mujoco.viewer.launch_passive(self.model, self.data)
+            self.debug_viewer.sync()
+            pdb.set_trace()
+
+        if debug_render:
+            self.debug_render = mujoco.Renderer(self.model, 480, 640)
+            self.debug_options = mujoco.MjvOption()
+            mujoco.mjv_defaultOption(self.debug_options)
+            self.debug_options.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = True
+            self.debug_options.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = True
+            self.debug_options.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
+            self.debug_images = []
         return
 
     def _add_hand(self, xml_path):
@@ -91,34 +110,19 @@ class HOMjSpec:
         child_world = attach_frame.attach_body(
             child_spec.worldbody, self.hand_prefix, ""
         )
-        child_world.add_freejoint(name=self.hf_name)
+        child_world.add_freejoint(name="hand_freejoint")
         self.spec.worldbody.add_body(name="mocap_body", mocap=True)
-        mocap_solimp = [0.9, 0.95, 0.001, 0.5, 2]  # default parameters
-        mocap_data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
         self.spec.add_equality(
             type=mujoco.mjtEq.mjEQ_WELD,
             name1="mocap_body",
             name2=f"{self.hand_prefix}world",
             objtype=mujoco.mjtObj.mjOBJ_BODY,
-            solimp=mocap_solimp,
-            data=mocap_data,
+            solimp=[0.9, 0.95, 0.001, 0.5, 2],
+            data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         )
+        return
 
-        joint_names = [joint.name for joint in self.spec.joints]
-        hf_id = joint_names.index(self.hf_name)
-        joint_names.pop(hf_id)
-        assert hf_id == 0
-        actuator_targets = [actuator.target for actuator in self.spec.actuators]
-        return joint_names, actuator_targets
-
-    def _add_object(
-        self,
-        obj_path,
-        obj_pose,
-        obj_scale,
-        has_floor_z0,
-        obj_density=1000,
-    ):
+    def _add_object(self, obj_path, obj_scale, obj_density, has_floor_z0):
         if has_floor_z0:
             floor_geom = self.spec.worldbody.add_geom(
                 name="object_collision_floor",
@@ -127,10 +131,8 @@ class HOMjSpec:
                 size=[0, 0, 1.0],
             )
 
-        obj_body = self.spec.worldbody.add_body(
-            name="object", pos=obj_pose[:3], quat=obj_pose[3:]
-        )
-        obj_body.add_freejoint(name=self.of_name)
+        obj_body = self.spec.worldbody.add_body(name="object")
+        obj_body.add_freejoint(name="obj_freejoint")
         parts_folder = os.path.join(obj_path, "urdf/meshes")
         for file in os.listdir(parts_folder):
             file_path = os.path.join(parts_folder, file)
@@ -155,51 +157,132 @@ class HOMjSpec:
                 type=mujoco.mjtGeom.mjGEOM_MESH,
                 meshname=mesh_name,
                 density=obj_density,
-                margin=0,
-                gap=0,
             )
-
-        return
-
-    def _add_key(self, hand_pose, hand_qpos, obj_pose):
-
-        key_qpos = self.merge_pose_qpos(hand_pose, hand_qpos, obj_pose)
-        key_ctrl = self.qpos_to_ctrl(hand_qpos)
-        self.spec.add_key(
-            qpos=key_qpos, ctrl=key_ctrl, mpos=hand_pose[:3], mquat=hand_pose[3:]
-        )
 
         return
 
     def _set_friction(self, test_friction):
         self.spec.option.cone = mujoco.mjtCone.mjCONE_ELLIPTIC
         self.spec.option.noslip_iterations = 2
+        self.spec.option.impratio = 10
         for g in self.spec.geoms:
             g.friction[:2] = test_friction
             g.condim = 4
         return
 
-    def merge_pose_qpos(self, hand_pose, hand_qpos, obj_pose):
-        merged_qpos = np.concatenate([hand_pose, hand_qpos, obj_pose], axis=0)
-        return merged_qpos
+    def _qpos2ctrl(self, hand_qpos):
+        return self._qpos2ctrl_matrix @ hand_qpos
 
-    def split_qpos_pose(self, merged_qpos):
-        hand_pose = merged_qpos[:7]
-        hand_qpos = merged_qpos[7:-7]
-        obj_pose = merged_qpos[-7:]
-        return hand_pose, hand_qpos, obj_pose
+    def get_obj_pose(self):
+        return self.data.qpos[-7:]
 
-    def qpos_to_ctrl(self, qpos):
-        key_ctrl = []
-        for at in self.actuator_targets:
-            if at in self.joint_names:
-                qid = self.joint_names.index(at)
-                key_ctrl.append(qpos[qid])
-            elif at in self.hand_tendon_cfg.keys():
-                qid0 = self.joint_names.index(self.hand_tendon_cfg[at][0])
-                qid1 = self.joint_names.index(self.hand_tendon_cfg[at][1])
-                key_ctrl.append(qpos[qid0] + qpos[qid1])
-        return key_ctrl
+    def get_contact_info(self, hand_pose, hand_qpos, obj_pose, obj_margin=0):
+        # Set margin and gap to detect contact
+        for i in range(self.model.ngeom):
+            if "object_collision" in self.model.geom(i).name:
+                self.model.geom_margin[i] = self.model.geom_gap[i] = obj_margin
+
+        # Set pose and qpos for hand and object
+        self.reset_pose_qpos(hand_pose, hand_qpos, obj_pose)
+
+        total_body_num = self.model.nbody
+        object_id = total_body_num - 1
+        hand_id = total_body_num - 2
+
+        # Processing all contact information
+        ho_contact = []
+        hh_contact = []
+        for contact in self.data.contact:
+            body1_id = self.model.geom(contact.geom1).bodyid
+            body2_id = self.model.geom(contact.geom2).bodyid
+            body1_name = self.model.body(self.model.geom(contact.geom1).bodyid).name
+            body2_name = self.model.body(self.model.geom(contact.geom2).bodyid).name
+            # hand and object
+            if (body1_id < hand_id and body2_id == object_id) or (
+                body2_id < hand_id and body1_id == object_id
+            ):
+                # keep body1=hand and body2=object
+                if body2_id == object_id:
+                    contact_normal = contact.frame[0:3]
+                    hand_body_name = body1_name.removeprefix(self.hand_prefix)
+                    obj_body_name = body2_name
+                else:
+                    contact_normal = -contact.frame[0:3]
+                    hand_body_name = body2_name.removeprefix(self.hand_prefix)
+                    obj_body_name = body1_name
+                ho_contact.append(
+                    {
+                        "contact_dist": contact.dist,
+                        "contact_pos": contact.pos,
+                        "contact_normal": contact_normal,
+                        "body1_name": hand_body_name,
+                        "body2_name": obj_body_name,
+                    }
+                )
+            # hand and hand
+            elif body1_id < hand_id and body2_id < hand_id:
+                hh_contact.append(
+                    {
+                        "contact_dist": contact.dist,
+                        "contact_pos": contact.pos,
+                        "contact_normal": contact.normal,
+                        "body1_name": body1_name,
+                        "body2_name": body2_name,
+                    }
+                )
+
+        # Set margin and gap back
+        for i in range(self.model.ngeom):
+            if "object_collision" in self.model.geom(i).name:
+                self.model.geom_margin[i] = self.model.geom_gap[i] = 0
+        return ho_contact, hh_contact
+
+    def set_ext_force_on_obj(self, ext_force):
+        self.data.xfrc_applied[-1] = ext_force
+        return
+
+    def reset_pose_qpos(self, hand_pose, hand_qpos, obj_pose):
+        # set key frame
+        self.model.key_qpos[0] = np.concatenate(
+            [hand_pose, hand_qpos, obj_pose], axis=0
+        )
+        self.model.key_qvel[0] = 0
+        self.model.key_act[0] = 0
+        self.model.key_mpos[0] = hand_pose[:3]
+        self.model.key_mquat[0] = hand_pose[3:]
+        self.model.key_ctrl[0] = self._qpos2ctrl(hand_qpos)
+
+        mujoco.mj_resetDataKeyframe(self.model, self.data, 0)
+        mujoco.mj_forward(self.model, self.data)
+        return
+
+    def control_hand_with_interp(
+        self, pose1, pose2, qpos1, qpos2, step_outer=10, step_inner=10
+    ):
+        pose_interp = interplote_pose(pose1, pose2, step_outer)
+        qpos_interp = interplote_qpos(
+            self._qpos2ctrl(qpos1), self._qpos2ctrl(qpos2), step_outer
+        )
+        for j in range(step_outer):
+            self.data.mocap_pos[0] = pose_interp[j, :3]
+            self.data.mocap_quat[0] = pose_interp[j, 3:7]
+            self.data.ctrl[:] = qpos_interp[j]
+            mujoco.mj_forward(self.model, self.data)
+            self.control_hand_step(step_inner)
+        return
+
+    def control_hand_step(self, step_inner):
+        for _ in range(step_inner):
+            mujoco.mj_step(self.model, self.data)
+
+        if self.debug_render is not None:
+            self.debug_render.update_scene(self.data, "closeup", self.debug_options)
+            pixels = self.debug_render.render()
+            self.debug_images.append(pixels)
+
+        if self.debug_viewer is not None:
+            raise NotImplementedError
+        return
 
 
 class RobotKinematics:

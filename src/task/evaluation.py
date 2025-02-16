@@ -48,7 +48,7 @@ def task_eval(configs):
         return
 
     iterable_params = zip(input_path_lst, [configs] * len(input_path_lst))
-    if configs.debug or configs.debug_viewer or configs.debug_render:
+    if configs.task.debug_viewer or configs.task.debug_render:
         for ip in iterable_params:
             safe_eval_one(ip)
     else:
