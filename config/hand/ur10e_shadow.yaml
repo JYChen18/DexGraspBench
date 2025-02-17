@@ -2,12 +2,13 @@ xml_path: assets/hand/ur10e_shadow/right.xml
 mocap: False
 exclude_table_contact: ["shoulder_link"]
 color: [0.863157, 0.0865002, 0.0802199, 1.0]
-finger_prefix: ['rh_ff', 'rh_mf', 'rh_rf', 'rh_lf', 'rh_th']
+finger_prefix: ['hand:rh_ff', 'hand:rh_mf', 'hand:rh_rf', 'hand:rh_lf', 'hand:rh_th']
 valid_body_name: [
-    'rh_palm', 
-    'rh_ffproximal', 'rh_ffmiddle', 'rh_ffdistal',
-    'rh_mfproximal', 'rh_mfmiddle', 'rh_mfdistal',
-    'rh_rfproximal', 'rh_rfmiddle', 'rh_rfdistal',
-    'rh_lfmetacarpal', 'rh_lfproximal', 'rh_lfmiddle', 'rh_lfdistal',
-    'rh_thproximal', 'rh_thmiddle', 'rh_thdistal',
+    'hand:rh_palm', 
+    'hand:rh_ffproximal', 'hand:rh_ffmiddle', 'hand:rh_ffdistal',
+    'hand:rh_mfproximal', 'hand:rh_mfmiddle', 'hand:rh_mfdistal',
+    'hand:rh_rfproximal', 'hand:rh_rfmiddle', 'hand:rh_rfdistal',
+    'hand:rh_lfmetacarpal', 'hand:rh_lfproximal', 'hand:rh_lfmiddle', 'hand:rh_lfdistal',
+    'hand:rh_thproximal', 'hand:rh_thmiddle', 'hand:rh_thdistal',
 ]
+tip_body_name: ['hand:rh_ffdistal','hand:rh_mfdistal','hand:rh_rfdistal','hand:rh_lfdistal','hand:rh_thdistal']

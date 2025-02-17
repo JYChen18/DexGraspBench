@@ -20,7 +20,7 @@ def compute_ROC_data(data_lst, metric_name):
     analytic_metrics = analytic_metrics[sort_index]
 
     lens = len(sim_results)
-    spilt_num = 100
+    spilt_num = min(100, lens)
     spilt_lens = lens // spilt_num
     spilt_left = lens % spilt_num
     steps = [0]
@@ -105,16 +105,14 @@ def draw_ROC_curve(data_lst, save_path):
             label=name_dict[metric_name_lst[i]],
             linestyle=line_type_dict[metric_name_lst[i]],
         )
-        print(
-            "max distance is ",
-            distance[max_index],
-            "threshold is ",
-            threshold[max_index],
-            "type is ",
-            metric_name_lst[i],
-        )
-        print("tpr is ", tpr[max_index], "fpr is ", fpr[max_index])
-        print("auc is ", auc_score)
+        # print(
+        #     "max distance is ",
+        #     distance[max_index],
+        #     "threshold is ",
+        #     threshold[max_index],
+        # )
+        # print("tpr is ", tpr[max_index], "fpr is ", fpr[max_index])
+        logging.info(f"AUC of {metric_name_lst[i]}: {auc_score}")
     plt.legend()
     plt.savefig(save_path, bbox_inches="tight", pad_inches=0.02)
     return
@@ -190,7 +188,7 @@ def task_stat(configs):
     succ_lst = glob(os.path.join(configs.succ_dir, *list(configs.data_struct)))
     eval_lst = glob(os.path.join(configs.eval_dir, *list(configs.data_struct)))
     logging.info(
-        f"Find {len(grasp_lst)} grasp data, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
+        f"Find {len(grasp_lst)} grasp data in {configs.grasp_dir}, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
     )
 
     # Grasp success rate
@@ -238,3 +236,6 @@ def task_stat(configs):
         logging.info(f"Contact number: {average_contact_number}")
         average_contact_consis = np.mean([d["contact_consis"] for d in data_lst])
         logging.info(f"Contact consistency: {average_contact_consis}")
+    
+    logging.info(f"Finish statistics")
+    

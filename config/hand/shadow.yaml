@@ -11,3 +11,4 @@ valid_body_name: [
     'rh_lfmetacarpal', 'rh_lfproximal', 'rh_lfmiddle', 'rh_lfdistal',
     'rh_thproximal', 'rh_thmiddle', 'rh_thdistal',
 ]
+tip_body_name: ['rh_ffdistal','rh_mfdistal','rh_rfdistal','rh_lfdistal','rh_thdistal']

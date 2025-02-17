@@ -48,11 +48,10 @@ def BODex(params):
 
     for i in range(len(robot_pose)):
         if configs.hand.mocap:
-            new_data["init_qpos"] = new_data["pregrasp_qpos"] = robot_pose[i, 0]
+            new_data["pregrasp_qpos"] = robot_pose[i, 0]
             new_data["grasp_qpos"] = robot_pose[i, 1]
             new_data["squeeze_qpos"] = robot_pose[i, 2]
         else:
-            new_data["init_qpos"] = robot_pose[i, 0]
             new_data["approach_qpos"] = robot_pose[i, :-4]
             new_data["pregrasp_qpos"] = robot_pose[i, -4]
             new_data["grasp_qpos"] = robot_pose[i, -3]
@@ -82,7 +81,7 @@ def task_format(configs):
         raw_data_path_lst = np.random.permutation(sorted(raw_data_path_lst))[
             : configs.task.max_num
         ]
-    logging.info(f"Find {raw_file_num} raw files, use {len(raw_data_path_lst)}")
+    logging.info(f"Find {raw_file_num} raw files for {os.path.join(configs.task.data_path, *raw_data_struct)}, use {len(raw_data_path_lst)}")
 
     if len(raw_data_path_lst) == 0:
         return

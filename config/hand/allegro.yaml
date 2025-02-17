@@ -10,3 +10,4 @@ valid_body_name: [
     'rf_proximal', 'rf_medial', 'rf_distal', 'rf_tip',
     'th_proximal', 'th_medial', 'th_distal', 'th_tip',
 ]
+tip_body_name: ['ff_tip','mf_tip','rf_tip','th_tip']

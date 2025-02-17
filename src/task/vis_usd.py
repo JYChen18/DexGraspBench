@@ -73,7 +73,7 @@ def task_vusd(configs):
     succ_lst = glob(os.path.join(configs.succ_dir, *list(configs.data_struct)))
     eval_lst = glob(os.path.join(configs.eval_dir, *list(configs.data_struct)))
     logging.info(
-        f"Find {len(grasp_lst)} grasp data, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
+        f"Find {len(grasp_lst)} grasp data in {configs.grasp_dir}, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
     )
 
     if configs.task.vis_type == "succ":
@@ -160,18 +160,16 @@ def task_vusd(configs):
     )
 
     # Add table
-    if "Tabletop" in configs.setting:
-        usd_helper.add_subroot("/world", "table")
+    if configs.setting == "tabletop":
         transformation_matrix = np.eye(4)
-        transformation_matrix[:3, 3] = [0.0, 0.0, 100 * -0.01]
+        transformation_matrix[:3, 3] = [0.0, 0.0, -0.01]
         usd_helper.add_mesh_to_stage(
-            trimesh.primitives.Box(
-                [100 * 2.0, 100 * 2.0, 100 * 0.02], transformation_matrix
-            ),
+            trimesh.primitives.Box([2.0, 2.0, 0.02], transformation_matrix),
             "table",
             base_frame="/world/table",
             material=Material(color=[0.5, 0.5, 0.5, 1.0], name="obj"),
         )
 
-    logging.info(f"Save to {os.path.abspath(save_path)}")
     usd_helper.write_stage_to_file(save_path)
+    logging.info(f"Save to {os.path.abspath(save_path)}")
+    logging.info(f"Finish visualization with USD")

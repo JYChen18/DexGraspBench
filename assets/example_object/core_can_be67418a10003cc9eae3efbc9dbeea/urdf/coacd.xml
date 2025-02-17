@@ -1,0 +1,88 @@
+<mujoco model="scene">
+    <option cone="elliptic" impratio="10"/>
+    <statistic center="0.4 0 0.4" extent="1"/>
+    <compiler autolimits="true" angle="radian" meshdir="."/>
+    <option impratio="10" integrator="implicitfast" cone="elliptic" noslip_iterations="2"/>
+    
+    <default>
+        <default class="visual">
+        <geom group="2" type="mesh" contype="0" conaffinity="0"/>
+        </default>
+        <default class="collision">
+        <geom group="2" type="mesh" condim="4"/>
+        </default>
+    </default>
+    
+    <visual>
+        <headlight diffuse="0.6 0.6 0.6" ambient="0.1 0.1 0.1" specular="0 0 0"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <global azimuth="120" elevation="-20"/>
+    </visual>
+    
+    <asset>
+        <mesh name="convex_piece_018.obj" file="meshes/convex_piece_018.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_012.obj" file="meshes/convex_piece_012.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_019.obj" file="meshes/convex_piece_019.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_014.obj" file="meshes/convex_piece_014.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_004.obj" file="meshes/convex_piece_004.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_001.obj" file="meshes/convex_piece_001.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_015.obj" file="meshes/convex_piece_015.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_005.obj" file="meshes/convex_piece_005.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_013.obj" file="meshes/convex_piece_013.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_002.obj" file="meshes/convex_piece_002.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_010.obj" file="meshes/convex_piece_010.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_006.obj" file="meshes/convex_piece_006.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_003.obj" file="meshes/convex_piece_003.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_008.obj" file="meshes/convex_piece_008.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_011.obj" file="meshes/convex_piece_011.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_000.obj" file="meshes/convex_piece_000.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_016.obj" file="meshes/convex_piece_016.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_009.obj" file="meshes/convex_piece_009.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_007.obj" file="meshes/convex_piece_007.obj"  scale="1.0 1.0 1.0"/>
+<mesh name="convex_piece_017.obj" file="meshes/convex_piece_017.obj"  scale="1.0 1.0 1.0"/>
+
+        <material name="black" specular="0.5" shininess="0.25" rgba="0.16355 0.16355 0.16355 1"/>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+        <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+        markrgb="0.8 0.8 0.8" width="300" height="300"/>
+        <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    </asset>
+    
+    <worldbody>
+        <light name="spotlight1" mode="targetbodycom" target="decomposed" pos="0 -1 2"/>
+        <camera name="closeup1" pos="0.5 0.25 1.3" xyaxes="-1 0 0 0 -0.6 0.8"/>
+        <camera name="closeup2" pos="0.5 0.0 0.8" xyaxes="1 0 0 0 -1 0"/>
+        <camera name="closeup3" pos="0.1 0 1.05" xyaxes="0 -1 0 0 0 1"/>
+        <camera name="closeup4"  pos="0.5 0 1.4" xyaxes="0 -1 0 1 0 0"/>
+        <camera name="closeup5"  pos="0 -0.3 0.1" xyaxes="1 0 0 0 0 1"/>
+        <camera name="closeup" pos="0  -0.3 0.1" xyaxes="1 0 0 0 0 1"/>
+        <geom name="floor" size="0 0 0.05" type="plane" material="groundplane"/>
+        <body name="decomposed" quat="1 0 0 1" pos="0 0 0">
+        <freejoint/>
+        <geom mesh="convex_piece_018.obj" name="object_collision_0" class="collision"/>
+<geom mesh="convex_piece_012.obj" name="object_collision_1" class="collision"/>
+<geom mesh="convex_piece_019.obj" name="object_collision_2" class="collision"/>
+<geom mesh="convex_piece_014.obj" name="object_collision_3" class="collision"/>
+<geom mesh="convex_piece_004.obj" name="object_collision_4" class="collision"/>
+<geom mesh="convex_piece_001.obj" name="object_collision_5" class="collision"/>
+<geom mesh="convex_piece_015.obj" name="object_collision_6" class="collision"/>
+<geom mesh="convex_piece_005.obj" name="object_collision_7" class="collision"/>
+<geom mesh="convex_piece_013.obj" name="object_collision_8" class="collision"/>
+<geom mesh="convex_piece_002.obj" name="object_collision_9" class="collision"/>
+<geom mesh="convex_piece_010.obj" name="object_collision_10" class="collision"/>
+<geom mesh="convex_piece_006.obj" name="object_collision_11" class="collision"/>
+<geom mesh="convex_piece_003.obj" name="object_collision_12" class="collision"/>
+<geom mesh="convex_piece_008.obj" name="object_collision_13" class="collision"/>
+<geom mesh="convex_piece_011.obj" name="object_collision_14" class="collision"/>
+<geom mesh="convex_piece_000.obj" name="object_collision_15" class="collision"/>
+<geom mesh="convex_piece_016.obj" name="object_collision_16" class="collision"/>
+<geom mesh="convex_piece_009.obj" name="object_collision_17" class="collision"/>
+<geom mesh="convex_piece_007.obj" name="object_collision_18" class="collision"/>
+<geom mesh="convex_piece_017.obj" name="object_collision_19" class="collision"/>
+
+        </body>
+    </worldbody>
+    <keyframe>
+        <key name="home" qpos="0 0 0.8 1 0 0 0"/>
+    </keyframe>
+    </mujoco>

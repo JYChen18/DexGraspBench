@@ -8,7 +8,7 @@ from util.rot_util import np_get_delta_qpos
 from task.eval_func.base import BaseEval
 
 
-class FcMocapEval(BaseEval):
+class fcMocapEval(BaseEval):
     def _simulate_under_extforce_details(self, pre_obj_qpos):
         external_force_direction = np.array(
             [

@@ -27,27 +27,22 @@ def _single_visd(params):
     grasp_data = np.load(data_path, allow_pickle=True).item()
     hand_fk = RobotKinematics(configs.hand.xml_path)
 
-    hand_pose_name_lst = []
-    if "pregrasp" in task_config.data_type:
-        hand_pose_name_lst.append(["pregrasp", "pregrasp_qpos"])
-    if "grasp" in task_config.data_type:
-        hand_pose_name_lst.append(["grasp", "hand_qpos"])
-    if "squeeze" in task_config.data_type:
-        hand_pose_name_lst.append(["squeeze", "squeeze_qpos"])
-
     # Visualize hand
-    for hand_pose_names in hand_pose_name_lst:
-        name, qpos_name = hand_pose_names[0], hand_pose_names[1]
-        if configs.hand.mocap:
-            hand_pose = grasp_data[qpos_name][:7]
-            hand_qpos = grasp_data[qpos_name][7:]
-        else:
-            hand_pose = np.array([0.0, 0, 0, 1, 0, 0, 0])
-            hand_qpos = grasp_data[qpos_name]
-        hand_fk.forward_kinematics(hand_qpos)
+    for data_name in task_config.data_type:
+        all_qpos = grasp_data[f"{data_name}_qpos"]
+        all_qpos = all_qpos[None] if len(all_qpos.shape) == 1 else all_qpos
 
-        visual_mesh = hand_fk.get_posed_meshes(hand_pose)
-        visual_mesh.export(f"{out_path}_{name}.obj")
+        for i in range(all_qpos.shape[0]):
+            if configs.hand.mocap:
+                hand_pose = all_qpos[i, :7]
+                hand_qpos = all_qpos[i, 7:]
+            else:
+                hand_pose = np.array([0.0, 0, 0, 1, 0, 0, 0])
+                hand_qpos = all_qpos[i]
+
+            hand_fk.forward_kinematics(hand_qpos)
+            visual_mesh = hand_fk.get_posed_meshes(hand_pose)
+            visual_mesh.export(f"{out_path}_{data_name}_{i}.obj")
 
     # Visualize object
     obj_path = os.path.join(grasp_data["obj_path"], "mesh/coacd.obj")
@@ -60,6 +55,8 @@ def _single_visd(params):
     obj_tm.apply_transform(rotation_matrix)
     obj_tm.export(f"{out_path}_obj.obj")
 
+    logging.info(f"Save to {os.path.dirname(out_path)}")
+
     return
 
 
@@ -68,20 +65,26 @@ def task_vobj(configs):
     succ_lst = glob(os.path.join(configs.succ_dir, *list(configs.data_struct)))
     eval_lst = glob(os.path.join(configs.eval_dir, *list(configs.data_struct)))
     logging.info(
-        f"Find {len(grasp_lst)} grasp data, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
+        f"Find {len(grasp_lst)} grasp data in {configs.grasp_dir}, {len(eval_lst)} evaluated, and {len(succ_lst)} succeeded in {configs.save_dir}"
     )
 
-    if configs.task.vis_success:
+    if configs.task.vis_type == "succ":
         data_folder = configs.succ_dir
         input_file_lst = succ_lst
-    else:
+    elif configs.task.vis_type == "fail":
         data_folder = configs.eval_dir
         input_file_lst = list(
             set(eval_lst).difference(
                 set([p.replace(configs.succ_dir, configs.eval_dir) for p in succ_lst])
             )
         )
+    elif configs.task.vis_type == "raw":
+        data_folder = configs.grasp_dir
+        input_file_lst = grasp_lst
+    else:
+        raise NotImplementedError
 
+    input_file_lst = sorted(input_file_lst)
     if configs.task.max_num > 0 and len(input_file_lst) > configs.task.max_num:
         input_file_lst = np.random.permutation(input_file_lst)[: configs.task.max_num]
 
@@ -93,4 +96,6 @@ def task_vobj(configs):
         result_iter = pool.imap_unordered(_single_visd, iterable_params)
         results = list(result_iter)
 
+    logging.info(f"Finish visualization with OBJ")
+    
     return

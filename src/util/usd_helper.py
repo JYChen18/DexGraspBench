@@ -112,7 +112,6 @@ class UsdHelper:
 
     def add_subroot(self, root="/world", sub_root="obstacles"):
         xform = self.stage.DefinePrim(os.path.join(root, sub_root), "Xform")
-        UsdGeom.Xformable(xform).AddTranslateOp().Set(Gf.Vec3f(100, 100, 100))
 
     def add_meshlst_to_stage(
         self,
@@ -145,9 +144,9 @@ class UsdHelper:
             form = UsdGeom.Xformable(curr_prim).GetOrderedXformOps()
 
             for t, p in enumerate(pose_lst):
-                position = Gf.Vec3f(100 * p[i, 0], 100 * p[i, 1], 100 * p[i, 2])
+                position = Gf.Vec3f(p[i, 0], p[i, 1], p[i, 2])
                 quat = Gf.Quatf(p[i, 3], *p[i, 4:-1])
-                scale = Gf.Vec3f(100 * p[i, -1], 100 * p[i, -1], 100 * p[i, -1])
+                scale = Gf.Vec3f(p[i, -1], p[i, -1], p[i, -1])
                 form[0].Set(time=t * self.interpolation_steps, value=position)
                 form[1].Set(time=t * self.interpolation_steps, value=quat)
                 form[2].Set(time=t * self.interpolation_steps, value=scale)

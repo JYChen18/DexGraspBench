@@ -34,7 +34,7 @@ class BaseEval:
         self.mj_ho = MjHO(
             obj_path=self.grasp_data["obj_path"],
             obj_scale=self.grasp_data["obj_scale"],
-            has_floor_z0="Tabletop" in configs.setting,
+            has_floor_z0=configs.setting == "tabletop",
             obj_density=new_obj_density,
             hand_xml_path=configs.hand.xml_path,
             hand_mocap=configs.hand.mocap,
@@ -99,9 +99,13 @@ class BaseEval:
         eval_config = self.configs.task.simulation_metrics
 
         # Reset to init hand qpos and check contact
+        init_qpos = (
+            self.grasp_data["pregrasp_qpos"]
+            if self.configs.hand.mocap
+            else self.grasp_data["approach_qpos"][0]
+        )
         ho_contact, hh_contact = self.mj_ho.get_contact_info(
-            self.grasp_data["init_qpos"],
-            self.grasp_data["obj_pose"],
+            init_qpos, self.grasp_data["obj_pose"]
         )
 
         # Filter out bad initialization with severe penetration
@@ -118,7 +122,7 @@ class BaseEval:
 
         # Record initial object pose
         pre_obj_qpos = deepcopy(self.mj_ho.get_obj_pose())
-        if "Tabletop" in self.configs.setting:
+        if self.configs.setting == "tabletop":
             pre_obj_qpos[2] += 0.1
 
         # Detailed simulation methods for testing
@@ -160,10 +164,10 @@ class BaseEval:
             if (
                 (hand_body_name not in self.configs.hand.valid_body_name)
                 or (
-                    eval_config.contact_body_name is not None
-                    and eval_config.contact_body_name not in hand_body_name
+                    eval_config.contact_tip_only
+                    and hand_body_name not in self.configs.hand.tip_body_name
                 )
-                or (np.abs(c["contact_dist"]) < eval_config.contact_threshold)
+                or (np.abs(c["contact_dist"]) > eval_config.contact_threshold)
             ):
                 continue
 
@@ -177,6 +181,7 @@ class BaseEval:
         # If no contact, directly set a bad value as metric
         fc_metric_results = {}
         if len(contact_point_dict) == 0:
+            print("111")
             for metric_name in eval_config.type:
                 fc_metric_results[f"{metric_name}_metric"] = 2
             return fc_metric_results
@@ -238,18 +243,17 @@ class BaseEval:
         eval_npy_path = self.input_npy_path.replace(
             self.configs.grasp_dir, self.configs.eval_dir
         )
-        if not os.path.exists(eval_npy_path):
-            os.makedirs(os.path.dirname(eval_npy_path), exist_ok=True)
-            for key in [
-                "approach_qpos",
-                "pregrasp_qpos",
-                "grasp_qpos",
-                "squeeze_qpos",
-                "obj_scale",
-                "obj_path",
-                "obj_pose",
-            ]:
-                if key in self.grasp_data.keys():
-                    eval_results[key] = self.grasp_data[key]
-            np.save(eval_npy_path, eval_results)
+        os.makedirs(os.path.dirname(eval_npy_path), exist_ok=True)
+        for key in [
+            "approach_qpos",
+            "pregrasp_qpos",
+            "grasp_qpos",
+            "squeeze_qpos",
+            "obj_scale",
+            "obj_path",
+            "obj_pose",
+        ]:
+            if key in self.grasp_data.keys():
+                eval_results[key] = self.grasp_data[key]
+        np.save(eval_npy_path, eval_results)
         return

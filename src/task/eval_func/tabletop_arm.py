@@ -6,7 +6,7 @@ import numpy as np
 from .base import BaseEval
 
 
-class TabletopArmEval(BaseEval):
+class tabletopArmEval(BaseEval):
     def _simulate_under_extforce_details(self, pre_obj_qpos):
         # 1. Set object gravity
         external_force_direction = np.array([0.0, 0, -1, 0, 0, 0])
