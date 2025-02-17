@@ -8,7 +8,7 @@ from transforms3d import quaternions as tq
 import torch
 
 from util.rot_util import torch_quaternion_to_matrix, torch_matrix_to_quaternion
-
+from copy import deepcopy
 
 def BODex(params):
     data_file, configs = params[0], params[1]
@@ -66,6 +66,26 @@ def BODex(params):
         np.save(save_path, new_data)
     return
 
+def DGN(params):
+    data_file, configs = params[0], params[1]
+    raw_data = np.load(data_file, allow_pickle=True).item()
+    
+    tmp_rot = tq.quat2mat(raw_data["grasp_qpos"][3:7])
+    delta_rot = tq.quat2mat([0, 1, 0, 1])
+    raw_data["grasp_qpos"][3:7] = tq.mat2quat(tmp_rot @ delta_rot.T)
+    new_data = deepcopy(raw_data)
+    new_data["pregrasp_qpos"]=deepcopy(raw_data["grasp_qpos"])
+    new_data["pregrasp_qpos"][7:]*=0.9
+    new_data["squeeze_qpos"]=raw_data["grasp_qpos"]
+    new_data["squeeze_qpos"][7:]*=1.1
+    save_path = (
+        data_file.replace(configs.task.data_path, configs.grasp_dir)
+    )
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    np.save(save_path, new_data)
+    return
+
+
 
 def task_format(configs):
     if configs.task.data_name == "BODex":
@@ -73,6 +93,8 @@ def task_format(configs):
             raw_data_struct = ["**", "**_grasp.npy"]
         else:
             raw_data_struct = ["**", "**_mogen.npy"]
+    elif configs.task.data_name == "DGN":
+        raw_data_struct = ["**", "**","**.npy"]
     else:
         raise NotImplementedError
     raw_data_path_lst = glob(os.path.join(configs.task.data_path, *raw_data_struct))

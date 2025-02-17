@@ -37,7 +37,7 @@ def read_npy(params):
 
             obj_pose_lst.append(
                 np.concatenate(
-                    [grasp_data["obj_pose"], grasp_data["obj_scale"]], axis=-1
+                    [grasp_data["obj_pose"], [grasp_data["obj_scale"]]], axis=-1
                 )
             )
             hand_pose_lst.append(hand_link_pose)
