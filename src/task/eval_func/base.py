@@ -34,9 +34,11 @@ class BaseEval:
         self.mj_ho = MjHO(
             obj_path=self.grasp_data["obj_path"],
             obj_scale=self.grasp_data["obj_scale"],
-            has_floor_z0="TableTop" in configs.setting,
+            has_floor_z0="Tabletop" in configs.setting,
             obj_density=new_obj_density,
             hand_xml_path=configs.hand.xml_path,
+            hand_mocap=configs.hand.mocap,
+            exclude_table_contact=configs.hand.exclude_table_contact,
             friction_coef=configs.task.miu_coef,
             debug_render=configs.task.debug_render,
             debug_viewer=configs.task.debug_viewer,
@@ -55,7 +57,6 @@ class BaseEval:
         eval_config = self.configs.task.pene_contact_metrics
 
         ho_contact, hh_contact = self.mj_ho.get_contact_info(
-            self.grasp_data["grasp_pose"],
             self.grasp_data["grasp_qpos"],
             self.grasp_data["obj_pose"],
             obj_margin=eval_config.contact_margin,
@@ -97,10 +98,9 @@ class BaseEval:
     def _eval_simulate_under_extforce(self):
         eval_config = self.configs.task.simulation_metrics
 
-        # Reset to pre-grasp and check contact
+        # Reset to init hand qpos and check contact
         ho_contact, hh_contact = self.mj_ho.get_contact_info(
-            self.grasp_data["pregrasp_pose"],
-            self.grasp_data["pregrasp_qpos"],
+            self.grasp_data["init_qpos"],
             self.grasp_data["obj_pose"],
         )
 
@@ -118,7 +118,7 @@ class BaseEval:
 
         # Record initial object pose
         pre_obj_qpos = deepcopy(self.mj_ho.get_obj_pose())
-        if "TableTop" in self.configs.setting:
+        if "Tabletop" in self.configs.setting:
             pre_obj_qpos[2] += 0.1
 
         # Detailed simulation methods for testing
@@ -147,7 +147,6 @@ class BaseEval:
         eval_config = self.configs.task.analytic_fc_metrics
 
         ho_contact, _ = self.mj_ho.get_contact_info(
-            self.grasp_data["grasp_pose"],
             self.grasp_data["grasp_qpos"],
             self.grasp_data["obj_pose"],
             obj_margin=eval_config.contact_threshold,
@@ -242,11 +241,9 @@ class BaseEval:
         if not os.path.exists(eval_npy_path):
             os.makedirs(os.path.dirname(eval_npy_path), exist_ok=True)
             for key in [
-                "grasp_pose",
-                "grasp_qpos",
-                "pregrasp_pose",
+                "approach_qpos",
                 "pregrasp_qpos",
-                "squeeze_pose",
+                "grasp_qpos",
                 "squeeze_qpos",
                 "obj_scale",
                 "obj_path",

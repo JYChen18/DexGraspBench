@@ -21,16 +21,26 @@ def read_npy(params):
     obj_pose_lst = []
     hand_pose_lst = []
     for data_name in task_config.data_type:
-        hand_pose = grasp_data[f"{data_name}_pose"]
-        hand_qpos = grasp_data[f"{data_name}_qpos"]
-        if len(hand_fk.mj_data.qpos) == len(hand_qpos) + 7:
-            qpos = np.concatenate([np.array([0.0, 0, 0, 1, 0, 0, 0]), hand_qpos])
-        elif len(hand_fk.mj_data.qpos) == len(hand_qpos):
-            qpos = hand_qpos
-        else:
-            raise NotImplementedError(
-                f"qpos length: {len(hand_qpos)}; xml length: {len(hand_fk.mj_data.qpos)}"
+        all_qpos = grasp_data[f"{data_name}_qpos"]
+        all_qpos = all_qpos[None] if len(all_qpos.shape) == 1 else all_qpos
+
+        for i in range(all_qpos.shape[0]):
+            if configs.hand.mocap:
+                hand_pose = all_qpos[i, :7]
+                hand_qpos = all_qpos[i, 7:]
+            else:
+                hand_pose = np.array([0.0, 0, 0, 1, 0, 0, 0])
+                hand_qpos = all_qpos[i]
+
+            hand_fk.forward_kinematics(hand_qpos)
+            hand_link_pose = hand_fk.get_poses(hand_pose)
+
+            obj_pose_lst.append(
+                np.concatenate(
+                    [grasp_data["obj_pose"], [grasp_data["obj_scale"]]], axis=-1
+                )
             )
+<<<<<<< HEAD
 
         if task_config.normalize_hand:
             # Normalize to hand space
@@ -57,6 +67,9 @@ def read_npy(params):
             np.concatenate([new_obj_pose, grasp_data["obj_scale"]], axis=-1)
         )
         hand_pose_lst.append(hand_link_pose)
+=======
+            hand_pose_lst.append(hand_link_pose)
+>>>>>>> 73c567e52815f5b858fca547aa14841a40cf9f5e
 
     obj_path = grasp_data["obj_path"]
     if not obj_path.endswith(".obj"):
@@ -125,7 +138,7 @@ def task_vusd(configs):
             obj_path_dict[op] = []
         obj_path_dict[op].append(r)
 
-    data_length = len(configs.task.data_type)
+    data_length = result_iter[0]["hand_link_pose"].shape[0]
 
     hand_pose_scale_lst = np.ones(
         (
@@ -176,11 +189,17 @@ def task_vusd(configs):
     )
 
     # Add table
-    if "TableTop" in configs.setting:
+    if "Tabletop" in configs.setting:
+        usd_helper.add_subroot("/world", "table")
+        transformation_matrix = np.eye(4)
+        transformation_matrix[:3, 3] = [0.0, 0.0, 100 * -0.01]
         usd_helper.add_mesh_to_stage(
-            trimesh.primitives.Box([0.5, 0.5, 0.2], [0.0, 0.0, -0.1]),
+            trimesh.primitives.Box(
+                [100 * 2.0, 100 * 2.0, 100 * 0.02], transformation_matrix
+            ),
             "table",
             base_frame="/world/table",
+            material=Material(color=[0.5, 0.5, 0.5, 1.0], name="obj"),
         )
 
     logging.info(f"Save to {os.path.abspath(save_path)}")

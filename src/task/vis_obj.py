@@ -29,27 +29,24 @@ def _single_visd(params):
 
     hand_pose_name_lst = []
     if "pregrasp" in task_config.data_type:
-        hand_pose_name_lst.append(["pregrasp", "pregrasp_pose", "pregrasp_qpos"])
+        hand_pose_name_lst.append(["pregrasp", "pregrasp_qpos"])
     if "grasp" in task_config.data_type:
-        hand_pose_name_lst.append(["grasp", "hand_pose", "hand_qpos"])
+        hand_pose_name_lst.append(["grasp", "hand_qpos"])
     if "squeeze" in task_config.data_type:
-        hand_pose_name_lst.append(["squeeze", "hand_pose", "squeeze_qpos"])
+        hand_pose_name_lst.append(["squeeze", "squeeze_qpos"])
 
     # Visualize hand
     for hand_pose_names in hand_pose_name_lst:
-        name, pose_name, qpos_name = (
-            hand_pose_names[0],
-            hand_pose_names[1],
-            hand_pose_names[2],
-        )
-        hand_fk.forward_kinematics(grasp_data[qpos_name])
+        name, qpos_name = hand_pose_names[0], hand_pose_names[1]
+        if configs.hand.mocap:
+            hand_pose = grasp_data[qpos_name][:7]
+            hand_qpos = grasp_data[qpos_name][7:]
+        else:
+            hand_pose = np.array([0.0, 0, 0, 1, 0, 0, 0])
+            hand_qpos = grasp_data[qpos_name]
+        hand_fk.forward_kinematics(hand_qpos)
 
-        visual_mesh = hand_fk.get_posed_meshes()
-        rotation_matrix = trimesh.transformations.quaternion_matrix(
-            grasp_data[pose_name][3:]
-        )
-        rotation_matrix[:3, 3] = grasp_data[pose_name][:3]
-        visual_mesh.apply_transform(rotation_matrix)
+        visual_mesh = hand_fk.get_posed_meshes(hand_pose)
         visual_mesh.export(f"{out_path}_{name}.obj")
 
     # Visualize object

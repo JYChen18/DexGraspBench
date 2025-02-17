@@ -1,9 +1,9 @@
 # Modification Clarification
 
 ### Shadow 
-1. Remove the forearm and wrist.
-2. Exclude the contact between some links, such as `palm` and `rh_ffproximal`. They are by default not excluded because of `rh_ffknuckle`.
-3. Unify the forcerange and kp of different joints. (kp=5)
+1. Remove the forearm and wrist, because they are more like parts of the arm.
+2. Exclude the contact between some neighboring links, such as `palm` and `rh_ffproximal`, which are not excluded by default because of `rh_ffknuckle`.
+3. Unify the forcerange and kp of different joints. kp is set to 5 because the object is heavy (object mass=100g).
 
 ### Allegro
 1. Use kp=5.

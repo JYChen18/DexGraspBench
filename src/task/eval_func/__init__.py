@@ -1,3 +1,3 @@
-from .fc_mocap import FCMocapEval
-from .tabletop_mocap import TableTopMocapEval
-from .tabletop_arm import TableTopArmEval
+from .fc_mocap import FcMocapEval
+from .tabletop_mocap import TabletopMocapEval
+from .tabletop_arm import TabletopArmEval

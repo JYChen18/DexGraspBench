@@ -1,4 +1,6 @@
-xml_path: assets/hand/shadow/customized.xml 
+xml_path: assets/hand/shadow/right_hand.xml 
+mocap: True
+exclude_table_contact: 
 color: [0.863157, 0.0865002, 0.0802199, 1.0]
 finger_prefix: ['rh_ff', 'rh_mf', 'rh_rf', 'rh_lf', 'rh_th']
 valid_body_name: [

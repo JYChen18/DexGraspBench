@@ -1,3 +1,5 @@
 # xml_path: third_party/mujoco_menagerie/leap_hand/right_hand.xml
-xml_path: assets/hand/leap/customized.xml
+xml_path: assets/hand/leap/right_hand.xml
+mocap: True
+exclude_table_contact: 
 color: [0.132868, 0.496933, 0.144129, 1.0]

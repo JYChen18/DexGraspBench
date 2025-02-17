@@ -110,7 +110,7 @@ class UsdHelper:
         camera.GetHorizontalApertureAttr().Set(20)
         camera.GetVerticalApertureAttr().Set(20)
 
-    def add_subroot(self, root="/world", sub_root="/obstacles"):
+    def add_subroot(self, root="/world", sub_root="obstacles"):
         xform = self.stage.DefinePrim(os.path.join(root, sub_root), "Xform")
         UsdGeom.Xformable(xform).AddTranslateOp().Set(Gf.Vec3f(100, 100, 100))
 

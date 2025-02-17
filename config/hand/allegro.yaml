@@ -1,4 +1,6 @@
-xml_path: assets/hand/allegro/customized.xml 
+xml_path: assets/hand/allegro/right_hand.xml 
+mocap: True
+exclude_table_contact: 
 color: [0.0544794, 0.376262, 0.913099, 1.0]
 finger_prefix: ['ff','mf', 'rf', 'th']
 valid_body_name: [

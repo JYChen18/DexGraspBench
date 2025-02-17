@@ -8,7 +8,7 @@ from util.rot_util import np_get_delta_qpos
 from task.eval_func.base import BaseEval
 
 
-class FCMocapEval(BaseEval):
+class FcMocapEval(BaseEval):
     def _simulate_under_extforce_details(self, pre_obj_qpos):
         external_force_direction = np.array(
             [
@@ -23,15 +23,12 @@ class FCMocapEval(BaseEval):
 
         for i in range(len(external_force_direction)):
             self.mj_ho.reset_pose_qpos(
-                self.grasp_data["pregrasp_pose"],
                 self.grasp_data["pregrasp_qpos"],
                 self.grasp_data["obj_pose"],
             )
 
             # 2. Move hand to grasp pose
             self.mj_ho.control_hand_with_interp(
-                self.grasp_data["pregrasp_pose"],
-                self.grasp_data["grasp_pose"],
                 self.grasp_data["pregrasp_qpos"],
                 self.grasp_data["grasp_qpos"],
             )
@@ -40,8 +37,6 @@ class FCMocapEval(BaseEval):
             # NOTE step 2 and 3 are seperate because pre -> grasp -> squeeze are stage-wise linear.
             # If step 2 and 3 are merged to one linear interpolation, the performance will drop a lot.
             self.mj_ho.control_hand_with_interp(
-                self.grasp_data["grasp_pose"],
-                self.grasp_data["squeeze_pose"],
                 self.grasp_data["grasp_qpos"],
                 self.grasp_data["squeeze_qpos"],
             )

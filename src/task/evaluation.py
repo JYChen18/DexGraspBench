@@ -12,7 +12,11 @@ from .eval_func import *
 def safe_eval_one(params):
     input_npy_path, configs = params[0], params[1]
     try:
-        eval(f"{configs.setting}Eval")(input_npy_path, configs).run()
+        if configs.hand.mocap:
+            eval_func_name = f"{configs.setting}MocapEval"
+        else:
+            eval_func_name = f"{configs.setting}ArmEval"
+        eval(eval_func_name)(input_npy_path, configs).run()
         return
     except Exception as e:
         error_traceback = traceback.format_exc()

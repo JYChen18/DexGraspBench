@@ -15,6 +15,10 @@ def BODex(params):
 
     raw_data = np.load(data_file, allow_pickle=True).item()
     robot_pose = raw_data["robot_pose"][0]
+    new_data = {}
+    new_data["obj_pose"] = raw_data["obj_pose"][0]
+    new_data["obj_scale"] = raw_data["obj_scale"][0]
+    new_data["obj_path"] = f"assets/DGNObj/{data_file.split('/')[-2]}"
 
     if configs.hand_name == "shadow":
         # Change qpos order of thumb
@@ -34,50 +38,44 @@ def BODex(params):
         robot_pose[:, :, 3:7] = torch_matrix_to_quaternion(
             tmp_rot @ delta_rot.transpose(-1, -2)
         )
+    elif configs.hand_name == "ur10e_shadow":
+        robot_pose = np.concatenate(
+            [robot_pose[:, :, :8], robot_pose[:, :, 13:], robot_pose[:, :, 8:13]],
+            axis=-1,
+        )
     else:
         raise NotImplementedError
-    pregrasp_pose = robot_pose[:, 0, :7]
-    pregrasp_qpos = robot_pose[:, 0, 7:]
-    hand_qpos = robot_pose[:, 1, 7:]
-    hand_pose = robot_pose[:, 1, :7]
-    new_data = {}
-    new_data["obj_pose"] = raw_data["obj_pose"][0]
-    new_data["obj_scale"] = raw_data["obj_scale"][0]
-    new_data["obj_path"] = f"assets/DGNObj/{data_file.split('/')[-2]}"
 
     for i in range(len(robot_pose)):
-        new_data["pregrasp_pose"] = pregrasp_pose[i]
-        new_data["pregrasp_qpos"] = pregrasp_qpos[i]
-        new_data["grasp_pose"] = hand_pose[i]
-        new_data["grasp_qpos"] = hand_qpos[i]
-        new_data["squeeze_pose"] = hand_pose[i]
-        new_data["squeeze_qpos"] = hand_qpos[i] * 1.5 - pregrasp_qpos[i] * 0.5
-        save_path = data_file.replace(
-            configs.task.data_path, configs.grasp_dir
-        ).replace("_grasp.npy", f"/{i}.npy")
+        if configs.hand.mocap:
+            new_data["init_qpos"] = new_data["pregrasp_qpos"] = robot_pose[i, 0]
+            new_data["grasp_qpos"] = robot_pose[i, 1]
+            new_data["squeeze_qpos"] = robot_pose[i, 2]
+        else:
+            new_data["init_qpos"] = robot_pose[i, 0]
+            new_data["approach_qpos"] = robot_pose[i, :-4]
+            new_data["pregrasp_qpos"] = robot_pose[i, -4]
+            new_data["grasp_qpos"] = robot_pose[i, -3]
+            new_data["squeeze_qpos"] = robot_pose[i, -2]
+            new_data["lift_qpos"] = robot_pose[i, -1]
+        save_path = (
+            data_file.replace(configs.task.data_path, configs.grasp_dir)
+            .replace("_grasp.npy", f"/{i}.npy")
+            .replace("_mogen.npy", f"/{i}.npy")
+        )
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         np.save(save_path, new_data)
     return
 
 
-def FRoGGeR():
-    return
-
-
-def SpringGrasp():
-    return
-
-
-def DGN():
-    return
-
-
 def task_format(configs):
     if configs.task.data_name == "BODex":
-        raw_data_struct = ["**", "**_grasp.npy"]
+        if configs.hand.mocap:
+            raw_data_struct = ["**", "**_grasp.npy"]
+        else:
+            raw_data_struct = ["**", "**_mogen.npy"]
     else:
         raise NotImplementedError
-
     raw_data_path_lst = glob(os.path.join(configs.task.data_path, *raw_data_struct))
     raw_file_num = len(raw_data_path_lst)
     if configs.task.max_num > 0:

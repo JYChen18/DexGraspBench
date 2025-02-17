@@ -22,11 +22,14 @@ class MjHO:
         obj_scale,
         obj_density,
         hand_xml_path,
+        hand_mocap,
+        exclude_table_contact,
         friction_coef,
         has_floor_z0,
         debug_render=False,
         debug_viewer=False,
     ):
+        self.hand_mocap = hand_mocap
         self.spec = mujoco.MjSpec()
         self.spec.meshdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
         self.spec.option.timestep = 0.004
@@ -48,13 +51,18 @@ class MjHO:
                 castshadow=False,
             )
             self.spec.worldbody.add_camera(
-                name="closeup", pos=[0.4, -0.02, 0.15], xyaxes=[0, 1, 0, 0, 0, 1]
+                name="closeup", pos=[0.75, 1.0, 1.0], xyaxes=[-1, 0, 0, 0, -1, 1]
             )
 
-        self._add_hand(hand_xml_path)
+        self._add_hand(hand_xml_path, hand_mocap)
         self._add_object(obj_path, obj_scale, obj_density, has_floor_z0)
         self._set_friction(friction_coef)
         self.spec.add_key()
+        if exclude_table_contact is not None:
+            for body_name in exclude_table_contact:
+                self.spec.add_exclude(
+                    bodyname1="world", bodyname2=f"{self.hand_prefix}{body_name}"
+                )
 
         # Get ready for simulation
         self.model = self.spec.compile()
@@ -72,7 +80,7 @@ class MjHO:
             self.data.moment_rowadr,
             self.data.moment_colind,
         )
-        self._qpos2ctrl_matrix = qpos2ctrl_matrix[..., 6:-6]
+        self._qpos2ctrl_matrix = qpos2ctrl_matrix[..., :-6]
 
         self.debug_viewer = None
         self.debug_render = None
@@ -91,7 +99,7 @@ class MjHO:
             self.debug_images = []
         return
 
-    def _add_hand(self, xml_path):
+    def _add_hand(self, xml_path, mocap_base):
         # Read hand xml
         child_spec = mujoco.MjSpec.from_file(xml_path)
         for m in child_spec.meshes:
@@ -105,21 +113,22 @@ class MjHO:
             g.solimp[:3] = [0.5, 0.99, 0.0001]
             g.solref[:2] = [0.005, 1]
 
-        # Add freejoint of hand root
         attach_frame = self.spec.worldbody.add_frame()
         child_world = attach_frame.attach_body(
             child_spec.worldbody, self.hand_prefix, ""
         )
-        child_world.add_freejoint(name="hand_freejoint")
-        self.spec.worldbody.add_body(name="mocap_body", mocap=True)
-        self.spec.add_equality(
-            type=mujoco.mjtEq.mjEQ_WELD,
-            name1="mocap_body",
-            name2=f"{self.hand_prefix}world",
-            objtype=mujoco.mjtObj.mjOBJ_BODY,
-            solimp=[0.9, 0.95, 0.001, 0.5, 2],
-            data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-        )
+        # Add freejoint and mocap of hand root
+        if mocap_base:
+            child_world.add_freejoint(name="hand_freejoint")
+            self.spec.worldbody.add_body(name="mocap_body", mocap=True)
+            self.spec.add_equality(
+                type=mujoco.mjtEq.mjEQ_WELD,
+                name1="mocap_body",
+                name2=f"{self.hand_prefix}world",
+                objtype=mujoco.mjtObj.mjOBJ_BODY,
+                solimp=[0.9, 0.95, 0.001, 0.5, 2],
+                data=[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            )
         return
 
     def _add_object(self, obj_path, obj_scale, obj_density, has_floor_z0):
@@ -171,23 +180,26 @@ class MjHO:
         return
 
     def _qpos2ctrl(self, hand_qpos):
-        return self._qpos2ctrl_matrix @ hand_qpos
+        if self.hand_mocap:
+            return self._qpos2ctrl_matrix[:, 6:] @ hand_qpos[7:]
+        else:
+            return self._qpos2ctrl_matrix @ hand_qpos
 
     def get_obj_pose(self):
         return self.data.qpos[-7:]
 
-    def get_contact_info(self, hand_pose, hand_qpos, obj_pose, obj_margin=0):
+    def get_contact_info(self, hand_qpos, obj_pose, obj_margin=0):
         # Set margin and gap to detect contact
         for i in range(self.model.ngeom):
             if "object_collision" in self.model.geom(i).name:
                 self.model.geom_margin[i] = self.model.geom_gap[i] = obj_margin
 
         # Set pose and qpos for hand and object
-        self.reset_pose_qpos(hand_pose, hand_qpos, obj_pose)
+        self.reset_pose_qpos(hand_qpos, obj_pose)
 
-        total_body_num = self.model.nbody
-        object_id = total_body_num - 1
-        hand_id = total_body_num - 2
+        object_id = self.model.nbody - 1
+        hand_id = self.model.nbody - 2
+        world_id = -1 if self.hand_mocap else 0
 
         # Processing all contact information
         ho_contact = []
@@ -198,9 +210,9 @@ class MjHO:
             body1_name = self.model.body(self.model.geom(contact.geom1).bodyid).name
             body2_name = self.model.body(self.model.geom(contact.geom2).bodyid).name
             # hand and object
-            if (body1_id < hand_id and body2_id == object_id) or (
-                body2_id < hand_id and body1_id == object_id
-            ):
+            if (
+                body1_id > world_id and body1_id < hand_id and body2_id == object_id
+            ) or (body2_id > world_id and body2_id < hand_id and body1_id == object_id):
                 # keep body1=hand and body2=object
                 if body2_id == object_id:
                     contact_normal = contact.frame[0:3]
@@ -220,16 +232,23 @@ class MjHO:
                     }
                 )
             # hand and hand
-            elif body1_id < hand_id and body2_id < hand_id:
+            elif (
+                body1_id > world_id
+                and body1_id < hand_id
+                and body2_id > world_id
+                and body2_id < hand_id
+            ):
                 hh_contact.append(
                     {
                         "contact_dist": contact.dist,
                         "contact_pos": contact.pos,
-                        "contact_normal": contact.normal,
+                        "contact_normal": contact.frame[0:3],
                         "body1_name": body1_name,
                         "body2_name": body2_name,
                     }
                 )
+            # else:
+            #     print(body1_name, body2_name, body1_id, body2_id)
 
         # Set margin and gap back
         for i in range(self.model.ngeom):
@@ -241,31 +260,32 @@ class MjHO:
         self.data.xfrc_applied[-1] = ext_force
         return
 
-    def reset_pose_qpos(self, hand_pose, hand_qpos, obj_pose):
+    def reset_pose_qpos(self, hand_qpos, obj_pose):
         # set key frame
-        self.model.key_qpos[0] = np.concatenate(
-            [hand_pose, hand_qpos, obj_pose], axis=0
-        )
+        self.model.key_qpos[0] = np.concatenate([hand_qpos, obj_pose], axis=0)
+        self.model.key_ctrl[0] = self._qpos2ctrl(hand_qpos)
         self.model.key_qvel[0] = 0
         self.model.key_act[0] = 0
-        self.model.key_mpos[0] = hand_pose[:3]
-        self.model.key_mquat[0] = hand_pose[3:]
-        self.model.key_ctrl[0] = self._qpos2ctrl(hand_qpos)
+        if self.hand_mocap:
+            self.model.key_mpos[0] = hand_qpos[:3]
+            self.model.key_mquat[0] = hand_qpos[3:7]
 
         mujoco.mj_resetDataKeyframe(self.model, self.data, 0)
         mujoco.mj_forward(self.model, self.data)
         return
 
     def control_hand_with_interp(
-        self, pose1, pose2, qpos1, qpos2, step_outer=10, step_inner=10
+        self, hand_qpos1, hand_qpos2, step_outer=10, step_inner=10
     ):
-        pose_interp = interplote_pose(pose1, pose2, step_outer)
+        if self.hand_mocap:
+            pose_interp = interplote_pose(hand_qpos1[:7], hand_qpos2[:7], step_outer)
         qpos_interp = interplote_qpos(
-            self._qpos2ctrl(qpos1), self._qpos2ctrl(qpos2), step_outer
+            self._qpos2ctrl(hand_qpos1), self._qpos2ctrl(hand_qpos2), step_outer
         )
         for j in range(step_outer):
-            self.data.mocap_pos[0] = pose_interp[j, :3]
-            self.data.mocap_quat[0] = pose_interp[j, 3:7]
+            if self.hand_mocap:
+                self.data.mocap_pos[0] = pose_interp[j, :3]
+                self.data.mocap_quat[0] = pose_interp[j, 3:7]
             self.data.ctrl[:] = qpos_interp[j]
             mujoco.mj_forward(self.model, self.data)
             self.control_hand_step(step_inner)
@@ -337,12 +357,14 @@ class RobotKinematics:
             geom_poses[i, 3:] = tq.mat2quat(root_rot @ geom_rot)
         return geom_poses
 
-    def get_posed_meshes(self):
+    def get_posed_meshes(self, root_pose):
+        root_rot = tq.quat2mat(root_pose[3:])
+        root_trans = root_pose[:3]
         full_tm = []
         for k, v in self.mesh_geom_info.items():
             geom_rot = self.mj_data.geom_xmat[v["geom_id"]].reshape(3, 3)
             geom_trans = self.mj_data.geom_xpos[v["geom_id"]]
-            posed_vert = v["vert"] @ geom_rot.T + geom_trans
+            posed_vert = (v["vert"] @ geom_rot.T + geom_trans) @ root_rot.T + root_trans
             posed_tm = trimesh.Trimesh(vertices=posed_vert, faces=v["face"])
             full_tm.append(posed_tm)
         full_tm = trimesh.util.concatenate(full_tm)
