@@ -37,39 +37,10 @@ def read_npy(params):
 
             obj_pose_lst.append(
                 np.concatenate(
-                    [grasp_data["obj_pose"], [grasp_data["obj_scale"]]], axis=-1
+                    [grasp_data["obj_pose"], grasp_data["obj_scale"]], axis=-1
                 )
             )
-<<<<<<< HEAD
-
-        if task_config.normalize_hand:
-            # Normalize to hand space
-            ht = hand_pose[:3]
-            hr = tq.quat2mat(hand_pose[3:])
-            oT = grasp_data["obj_pose"][:3]
-            oR = tq.quat2mat(grasp_data["obj_pose"][3:])
-            new_oR = hr.T @ oR
-            new_oT = hr.T @ (oT - ht)
-            new_obj_pose = np.concatenate([new_oT, tq.mat2quat(new_oR)])
-            new_hand_pose = np.array([0.0, 0, 0, 1, 0, 0, 0])
-
-            delta_bias = np.array([0.0, 0.1, -0.1])
-            new_obj_pose[:3] += delta_bias
-            new_hand_pose[:3] += delta_bias
-        else:
-            new_obj_pose = grasp_data["obj_pose"]
-            new_hand_pose = hand_pose
-
-        hand_fk.forward_kinematics(qpos)
-        hand_link_pose = hand_fk.get_poses(new_hand_pose)
-        
-        obj_pose_lst.append(
-            np.concatenate([new_obj_pose, grasp_data["obj_scale"]], axis=-1)
-        )
-        hand_pose_lst.append(hand_link_pose)
-=======
             hand_pose_lst.append(hand_link_pose)
->>>>>>> 73c567e52815f5b858fca547aa14841a40cf9f5e
 
     obj_path = grasp_data["obj_path"]
     if not obj_path.endswith(".obj"):
@@ -123,7 +94,7 @@ def task_vusd(configs):
     np.random.seed(0)
     if configs.task.max_num > 0 and len(input_file_lst) > configs.task.max_num:
         input_file_lst = np.random.permutation(input_file_lst)[: configs.task.max_num]
-    print(input_file_lst[86])
+    # print(input_file_lst[86])
     logging.info(f"Visualize {len(input_file_lst)} grasp")
 
     param_lst = [(i, configs.hand.xml_path, configs) for i in input_file_lst]
