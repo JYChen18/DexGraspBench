@@ -5,7 +5,7 @@ A standard and unified simulation benchmark in [MuJoCo](https://github.com/googl
 [Project page](https://pku-epic.github.io/BODex/) ｜ [Paper](https://arxiv.org/abs/2412.16490)
 
 ## Introduction
-Reproducing ...
+Reproducing the quantitative results of different grasp synthesis methods in the paper.
 
 ## Getting Started
 
@@ -34,12 +34,18 @@ pip install 'qpsolvers[clarabel]'
 ### Running
 
 1. DexGraspNet baseline.
-generate grasp poses using [DexGraspNet](https://TOBEFILLED)
+generate grasp poses using [DexGraspNet](https://github.com/GFRL/DexGraspNet)
 
 ```
 bash scripts/test_DexGraspNet_allegro.sh
 ```
 
+2. SpringGrasp baseline.
+generate grasp poses using [SpringGrasp](https://github.com/GFRL/SpringGrasp)
+
+```
+bash scripts/test_SpringGrasp_allegro.sh
+```
 
 ## Changelog
 The `main` branch serves as our standard benchmark, with some adjustments to the settings compared to the [BODex](https://arxiv.org/abs/2412.16490) paper, aimed at improving the practicality. Key changes include increasing the object mass from 30g to 100g, raising the hand's kp from 1 to 5, and supporting more diverse object assets.

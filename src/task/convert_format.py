@@ -1,3 +1,5 @@
+import array
+from logging import config
 import os
 from glob import glob
 import logging
@@ -85,6 +87,27 @@ def DGN(params):
     np.save(save_path, new_data)
     return
 
+def Spg(params):
+    data_file, configs = params[0], params[1]
+    raw_data = np.load(data_file, allow_pickle=True).item()
+    
+    tmp_rot = tq.quat2mat(raw_data["grasp_qpos"][3:7])
+    delta_rot = tq.quat2mat([0, 1, 0, 0])
+    raw_data["grasp_qpos"][3:7] = tq.mat2quat(tmp_rot @ delta_rot.T)
+    raw_data["grasp_qpos"][:3] += tmp_rot @ delta_rot.T @ np.array([0.01,0,0.0])#Move the hand a little bit to the object to better success rate
+    new_data = deepcopy(raw_data)
+    new_data = deepcopy(raw_data)
+    new_data["pregrasp_qpos"]=deepcopy(raw_data["grasp_qpos"])
+    new_data["pregrasp_qpos"][7:-4]*=0.9
+    new_data["squeeze_qpos"]=raw_data["grasp_qpos"]
+    new_data["squeeze_qpos"][7:-4]*=1.2 #(th should not move, and the other finger should move more)
+    save_path = (
+        data_file.replace(configs.task.data_path, configs.grasp_dir)
+    )
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    np.save(save_path, new_data)
+    return
+
 
 
 def task_format(configs):
@@ -95,9 +118,12 @@ def task_format(configs):
             raw_data_struct = ["**", "**_mogen.npy"]
     elif configs.task.data_name == "DGN":
         raw_data_struct = ["**", "**","**.npy"]
+    elif configs.task.data_name == "Spg":
+        raw_data_struct = ["**", "**", "**.npy"]
     else:
         raise NotImplementedError
     raw_data_path_lst = glob(os.path.join(configs.task.data_path, *raw_data_struct))
+    print("raw_data_path_lst",os.path.join(configs.task.data_path, *raw_data_struct))
     raw_file_num = len(raw_data_path_lst)
     if configs.task.max_num > 0:
         raw_data_path_lst = np.random.permutation(sorted(raw_data_path_lst))[
