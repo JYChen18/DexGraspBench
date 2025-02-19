@@ -47,6 +47,9 @@ generate grasp poses using [SpringGrasp](https://github.com/GFRL/SpringGrasp)
 bash scripts/test_SpringGrasp_allegro.sh
 ```
 
+3. FRoGGeR baseline.
+generate grasp poses using [FRoGGeR](https://github.com/GFRL/frogger)
+
 ## Changelog
 The `main` branch serves as our standard benchmark, with some adjustments to the settings compared to the [BODex](https://arxiv.org/abs/2412.16490) paper, aimed at improving the practicality. Key changes include increasing the object mass from 30g to 100g, raising the hand's kp from 1 to 5, and supporting more diverse object assets.
 

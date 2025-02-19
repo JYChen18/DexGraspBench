@@ -108,6 +108,25 @@ def Spg(params):
     np.save(save_path, new_data)
     return
 
+def Frogger(params):
+    data_file, configs = params[0], params[1]
+    raw_data = np.load(data_file, allow_pickle=True).item()
+    
+    tmp_rot = tq.quat2mat(raw_data["grasp_qpos"][3:7])
+    raw_data["grasp_qpos"][:3]+=tmp_rot @ np.array([0.00,0,0.095])#Move the hand due to the different hand xml
+    delta_rot = tq.quat2mat([0, 1, 0, 1])
+    raw_data["grasp_qpos"][3:7] = tq.mat2quat(tmp_rot @ delta_rot.T)
+    new_data = deepcopy(raw_data)
+    new_data["pregrasp_qpos"]=deepcopy(raw_data["grasp_qpos"])
+    new_data["pregrasp_qpos"][7:]*=0.9
+    new_data["squeeze_qpos"]=raw_data["grasp_qpos"]
+    new_data["squeeze_qpos"][7:]*=1.1
+    save_path = (
+        data_file.replace(configs.task.data_path, configs.grasp_dir)
+    )
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    np.save(save_path, new_data)
+    return
 
 
 def task_format(configs):
@@ -119,6 +138,8 @@ def task_format(configs):
     elif configs.task.data_name == "DGN":
         raw_data_struct = ["**", "**","**.npy"]
     elif configs.task.data_name == "Spg":
+        raw_data_struct = ["**", "**", "**.npy"]
+    elif configs.task.data_name == "Frogger":
         raw_data_struct = ["**", "**", "**.npy"]
     else:
         raise NotImplementedError
