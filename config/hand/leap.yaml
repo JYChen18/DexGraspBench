@@ -3,3 +3,12 @@ xml_path: assets/hand/leap/right_hand.xml
 mocap: True
 exclude_table_contact: 
 color: [0.132868, 0.496933, 0.144129, 1.0]
+finger_prefix: ['if','mf', 'rf', 'th']
+valid_body_name: [
+    'palm', 
+    'if_px', 'if_md', 'if_ds',
+    'mf_px', 'mf_md', 'mf_ds',
+    'rf_px', 'rf_md', 'rf_ds',
+    'th_px', 'th_md', 'th_ds',
+]
+tip_body_name: ['if_ds','mf_ds','rf_ds','th_ds']

@@ -1,6 +1,7 @@
 import os
 import sys
 from copy import deepcopy
+import logging
 
 import numpy as np
 import imageio
@@ -89,9 +90,11 @@ class BaseEval:
         ho_pene = (
             -min([c["contact_dist"] for c in ho_contact]) if len(ho_contact) > 0 else 0
         )
+        ho_pene = max(ho_pene, 0)
         self_pene = (
             -min([c["contact_dist"] for c in hh_contact]) if len(hh_contact) > 0 else 0
         )
+        self_pene = max(self_pene, 0)
 
         return ho_pene, self_pene, contact_number, contact_distance, contact_consistency
 
@@ -181,7 +184,7 @@ class BaseEval:
         # If no contact, directly set a bad value as metric
         fc_metric_results = {}
         if len(contact_point_dict) == 0:
-            print("111")
+            # logging.warning("No contact when calculate fc metric!")
             for metric_name in eval_config.type:
                 fc_metric_results[f"{metric_name}_metric"] = 2
             return fc_metric_results

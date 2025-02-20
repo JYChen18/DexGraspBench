@@ -1,11 +1,5 @@
 # DexGraspBench
-
-A standard and unified simulation benchmark in [MuJoCo](https://github.com/google-deepmind/mujoco/) for dexterous grasping, aimed at **enabling a fair comparison across different grasp synthesis methods**, proposed in *BODex: Scalable and Efficient Robotic Dexterous Grasp Synthesis Using Bilevel Optimization [ICRA 2025]*.
-
-[Project page](https://pku-epic.github.io/BODex/) ｜ [Paper](https://arxiv.org/abs/2412.16490)
-
-## Introduction
-Reproducing the quantitative results of different grasp synthesis methods in the paper.
+Reproducing the quantitative results of different grasp synthesis methods in the paper. [Project page](https://pku-epic.github.io/BODex/) ｜ [Paper](https://arxiv.org/abs/2412.16490)
 
 ## Getting Started
 
@@ -51,9 +45,9 @@ bash scripts/test_SpringGrasp_allegro.sh
 generate grasp poses using [FRoGGeR](https://github.com/GFRL/frogger)
 
 ## Changelog
-The `main` branch serves as our standard benchmark, with some adjustments to the settings compared to the [BODex](https://arxiv.org/abs/2412.16490) paper, aimed at improving the practicality. Key changes include increasing the object mass from 30g to 100g, raising the hand's kp from 1 to 5, and supporting more diverse object assets.
+The `main` branch serves as our standard benchmark, with some adjustments to the settings compared to the [BODex](https://arxiv.org/abs/2412.16490) paper, aimed at improving the practicality. Key changes include increasing the object mass from 30g to 100g, raising the hand's kp from 1 to 5, and supporting more diverse object assets. One can futher reduce friction coefficients `miu_coef` (currently 0.6 for tangential and 0.02 for torsional) to increase difficulty.
 
-The original benchmark version is available in the `original` branch. This branch also includes code to test other grasp synthesis baselines, such as [DexGraspNet](https://github.com/PKU-EPIC/DexGraspNet), [FRoGGeR](https://github.com/alberthli/frogger), [SpringGrasp](https://github.com/Stanford-TML/SpringGrasp_release).
+The original benchmark version is available in the `baseline` branch. This branch also includes code to test other grasp synthesis baselines, such as [DexGraspNet](https://github.com/PKU-EPIC/DexGraspNet), [FRoGGeR](https://github.com/alberthli/frogger), [SpringGrasp](https://github.com/Stanford-TML/SpringGrasp_release).
 
 
 ### Future Plan

@@ -20,7 +20,11 @@ def BODex(params):
     new_data = {}
     new_data["obj_pose"] = raw_data["obj_pose"][0]
     new_data["obj_scale"] = raw_data["obj_scale"][0]
-    new_data["obj_path"] = f"assets/DGNObj/{data_file.split('/')[-2]}"
+    new_data["obj_path"] = "assets/object" + (
+        raw_data["obj_path"][0]
+        .split("/mesh/simplified.obj")[0]
+        .split("assets/object")[1]
+    )
 
     if configs.hand_name == "shadow":
         # Change qpos order of thumb
@@ -45,6 +49,14 @@ def BODex(params):
             [robot_pose[:, :, :8], robot_pose[:, :, 13:], robot_pose[:, :, 8:13]],
             axis=-1,
         )
+    elif configs.hand_name == "leap":
+        # Add a translation and rotation bias of palm which is included in XML but ignored in URDF
+        tmp_rot = torch_quaternion_to_matrix(torch.tensor(robot_pose[:, :, 3:7]))
+        delta_rot = torch_quaternion_to_matrix(torch.tensor([0, 1, 0, 0]).view(1, 1, 4))
+        tmp_rot = tmp_rot @ delta_rot.transpose(-1, -2)
+        robot_pose[:, :, 3:7] = torch_matrix_to_quaternion(tmp_rot)
+        robot_pose[:, :, :3] -= (tmp_rot @ torch.tensor([0, 0, 0.1])).numpy()
+        pass
     else:
         raise NotImplementedError
 
@@ -150,7 +162,9 @@ def task_format(configs):
         raw_data_path_lst = np.random.permutation(sorted(raw_data_path_lst))[
             : configs.task.max_num
         ]
-    logging.info(f"Find {raw_file_num} raw files for {os.path.join(configs.task.data_path, *raw_data_struct)}, use {len(raw_data_path_lst)}")
+    logging.info(
+        f"Find {raw_file_num} raw files for {os.path.join(configs.task.data_path, *raw_data_struct)}, use {len(raw_data_path_lst)}"
+    )
 
     if len(raw_data_path_lst) == 0:
         return
