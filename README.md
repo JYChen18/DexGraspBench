@@ -1,60 +1,26 @@
 # DexGraspBench
-Reproducing the quantitative results of different grasp synthesis methods in the paper. [Project page](https://pku-epic.github.io/BODex/) ｜ [Paper](https://arxiv.org/abs/2412.16490)
+
+This branch contains the early-version benchmark, which is more similar to the setting of BODex's paper but discarded. This branch also supports testing other grasp synthesis baselines, such as [DexGraspNet](https://github.com/PKU-EPIC/DexGraspNet), [FRoGGeR](https://github.com/alberthli/frogger), [SpringGrasp](https://github.com/Stanford-TML/SpringGrasp_release). 
+
+The standard benchmark is in the `main` branch, which is generally recommended.
+
+
+[Project page](https://pku-epic.github.io/BODex/) ｜ [Paper](https://arxiv.org/abs/2412.16490)
 
 ## Getting Started
 
 ### Installation
-1. Clone the third-party library [MuJoCo Menagerie](https://github.com/google-deepmind/mujoco_menagerie).
-```
-git submodule update --init --recursive --progress
-```
-2. Install the python environment via [Anaconda](https://www.anaconda.com/). 
-```
-conda create -n DGBench python=3.10 
-conda activate DGBench
-pip install numpy==1.26.4
-conda install pytorch==2.2.2 pytorch-cuda=12.1 -c pytorch -c nvidia 
-pip install mujoco
-pip install trimesh
-pip install hydra-core
-pip install transforms3d
-pip install matplotlib
-pip install scikit-learn
-pip install usd-core
-pip install imageio
-pip install 'qpsolvers[clarabel]'
-```
+The Python environment is the same as the `main` branch.
 
 ### Running
 
-1. DexGraspNet baseline.
-generate grasp poses using [DexGraspNet](https://github.com/GFRL/DexGraspNet)
-
+1. Generating grasp poses: please use our modified [DexGraspNet](https://github.com/GFRL/DexGraspNet), [SpringGrasp](https://github.com/GFRL/SpringGrasp), and [FRoGGeR](https://github.com/GFRL/frogger)
+2. Testing:
 ```
 bash scripts/test_DexGraspNet_allegro.sh
-```
-
-2. SpringGrasp baseline.
-generate grasp poses using [SpringGrasp](https://github.com/GFRL/SpringGrasp)
-
-```
 bash scripts/test_SpringGrasp_allegro.sh
+bash scripts/test_FRoGGeR_allegro.sh
 ```
-
-3. FRoGGeR baseline.
-generate grasp poses using [FRoGGeR](https://github.com/GFRL/frogger)
-
-## Changelog
-The `main` branch serves as our standard benchmark, with some adjustments to the settings compared to the [BODex](https://arxiv.org/abs/2412.16490) paper, aimed at improving the practicality. Key changes include increasing the object mass from 30g to 100g, raising the hand's kp from 1 to 5, and supporting more diverse object assets. One can futher reduce friction coefficients `miu_coef` (currently 0.6 for tangential and 0.02 for torsional) to increase difficulty.
-
-The original benchmark version is available in the `baseline` branch. This branch also includes code to test other grasp synthesis baselines, such as [DexGraspNet](https://github.com/PKU-EPIC/DexGraspNet), [FRoGGeR](https://github.com/alberthli/frogger), [SpringGrasp](https://github.com/Stanford-TML/SpringGrasp_release).
-
-
-### Future Plan
-- Incorporate visual/tactile feedback to support **close-loop** evaluation.
-- Add support for other physics simulators, such as [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) and the [IPC-based simulator](https://dl.acm.org/doi/10.1145/3528223.3530064).
-
-The detailed updating timeline is unsure. 
 
 
 ## Citation
