@@ -7,8 +7,8 @@ debug_dir: ${save_dir}/debug
 
 simulation_metrics: 
   max_pene: 0.01  # If the initial hand penetrates the object too much, regard it as a failure
-  trans_thre: 0.10
-  angle_thre: 180
+  trans_thre: 0.05
+  angle_thre: 15
 
 analytic_fc_metrics: 
   contact_tip_only: True 

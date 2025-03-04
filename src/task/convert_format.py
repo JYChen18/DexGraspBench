@@ -106,7 +106,7 @@ def Spg(params):
     tmp_rot = tq.quat2mat(raw_data["grasp_qpos"][3:7])
     delta_rot = tq.quat2mat([0, 1, 0, 0])
     raw_data["grasp_qpos"][3:7] = tq.mat2quat(tmp_rot @ delta_rot.T)
-    raw_data["grasp_qpos"][:3] += tmp_rot @ delta_rot.T @ np.array([0.01,0,0.0])#Move the hand a little bit to the object to better success rate
+    # raw_data["grasp_qpos"][:3] += tmp_rot @ delta_rot.T @ np.array([0.01,0,0.0])#Move the hand a little bit to the object to better success rate
     new_data = deepcopy(raw_data)
     new_data = deepcopy(raw_data)
     new_data["pregrasp_qpos"]=deepcopy(raw_data["grasp_qpos"])

@@ -151,10 +151,10 @@ def get_diversity(data_lst):
     from sklearn.decomposition import PCA
 
     hand_poses = torch.tensor(
-        np.stack([d["hand_pose"] for d in data_lst], axis=0)
+        np.stack([d["grasp_qpos"][:7] for d in data_lst], axis=0)
     ).float()
     hand_qpos = torch.tensor(
-        np.stack([d["hand_qpos"] for d in data_lst], axis=0)
+        np.stack([d["grasp_qpos"][7:] for d in data_lst], axis=0)
     ).float()
     obj_poses = torch.tensor(
         np.stack([d["obj_pose"] for d in data_lst], axis=0)
